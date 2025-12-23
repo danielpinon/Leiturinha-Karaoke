@@ -1,0 +1,22 @@
+{
+    "name": "agil/leiturinha-karaoke",
+    "description": "Plugin WordPress para leitura sincronizada (karaokê) com áudio e transcrição AWS",
+    "type": "wordpress-plugin",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4",
+        "aws/aws-sdk-php": "^3.366"
+    },
+    "autoload": {
+        "psr-4": {
+            "LeiturinhaKaraoke\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

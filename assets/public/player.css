@@ -1,0 +1,46 @@
+/* =====================================================
+   LEITURINHA KARAOKE – PLAYER PÚBLICO
+===================================================== */
+
+.lk-karaoke-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.lk-karaoke-audio {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.lk-karaoke-text {
+    font-size: 1.3rem;
+    line-height: 2.2;
+    user-select: none;
+}
+
+.lk-word {
+    display: inline-block;
+    padding: 3px 6px;
+    margin-right: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lk-word:hover {
+    background: #eee;
+}
+
+.lk-word.active {
+    background: #f5d000; /* amarelo escuro */
+    color: #000;
+    font-weight: 600;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .lk-karaoke-text {
+        font-size: 1.1rem;
+        line-height: 2;
+    }
+}
