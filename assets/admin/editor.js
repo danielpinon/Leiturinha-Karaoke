@@ -5,31 +5,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const menu = document.getElementById('context-menu');
     const modal = document.getElementById('time-modal');
 
+    const stylePanel = document.getElementById('word-style-panel');
+
     let selectedWords = [];
     let activeWord = null;
     let needsRebuild = false;
 
     /* ============================================================
-       TOOLBAR (formatação visual apenas)
+       UTIL – EXTRAI TEXTO PURO (SEM HTML)
+    ============================================================ */
+    function extractPlainText() {
+        let text = '';
+
+        editor.childNodes.forEach(node => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+            if (node.classList.contains('word')) {
+                text += node.innerText + ' ';
+            }
+
+            if (node.classList.contains('line-break')) {
+                text += '\n';
+            }
+        });
+
+        return text.replace(/[ \t]+\n/g, '\n').trimEnd();
+    }
+
+    /* ============================================================
+       TOOLBAR VISUAL (NÃO PERSISTE)
     ============================================================ */
     document.querySelectorAll('.editor-toolbar button').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
             document.execCommand(btn.dataset.cmd, false, null);
         });
     });
 
     /* ============================================================
-       DETECÇÃO DE ALTERAÇÃO ESTRUTURAL
-       (gatilho para rebuild)
+       DETECÇÃO DE ALTERAÇÃO REAL (REBUILD)
     ============================================================ */
-    editor.addEventListener('paste', () => {
-        needsRebuild = true;
+    let lastText = extractPlainText();
+
+    editor.addEventListener('input', () => {
+        const current = extractPlainText();
+        if (current !== lastText) {
+            needsRebuild = true;
+            lastText = current;
+        }
     });
 
-    editor.addEventListener('input', e => {
-        if (!e.target.closest('.word')) {
-            needsRebuild = true;
-        }
+    editor.addEventListener('paste', () => {
+        needsRebuild = true;
     });
 
     /* ============================================================
@@ -42,23 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.ctrlKey) {
             word.classList.toggle('selected');
         } else {
-            editor.querySelectorAll('.word')
-                .forEach(w => w.classList.remove('selected'));
+            editor.querySelectorAll('.word').forEach(w => w.classList.remove('selected'));
             word.classList.add('selected');
         }
 
         selectedWords = [...editor.querySelectorAll('.word.selected')];
+        activeWord = word;
+
+        syncStylePanel(word);
     });
 
     /* ============================================================
-       MENU DE CONTEXTO (botão direito)
+       MENU CONTEXTUAL
     ============================================================ */
     editor.addEventListener('contextmenu', e => {
         const word = e.target.closest('.word');
         if (!word) return;
 
         e.preventDefault();
-
         activeWord = word;
 
         menu.style.display = 'block';
@@ -74,11 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ============================================================
-       AÇÕES DO MENU
+       MENU – AÇÕES
     ============================================================ */
     menu.addEventListener('click', e => {
         const action = e.target.dataset.action;
-        if (!action) return;
+        if (!action || !activeWord) return;
 
         if (action === 'edit-time') {
             modal.style.display = 'block';
@@ -87,8 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (action === 'group' && selectedWords.length > 1) {
-            const start = Math.min(...selectedWords.map(w => +w.dataset.start));
-            const end = Math.max(...selectedWords.map(w => +w.dataset.end));
+            const start = Math.min(...selectedWords.map(w => Number(w.dataset.start)));
+            const end = Math.max(...selectedWords.map(w => Number(w.dataset.end)));
 
             selectedWords.forEach(w => {
                 w.dataset.start = start;
@@ -101,13 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
        MODAL – SALVAR TEMPO
     ============================================================ */
     document.getElementById('save-time').addEventListener('click', () => {
+        if (!activeWord) return;
+
         activeWord.dataset.start = document.getElementById('start-time').value;
         activeWord.dataset.end = document.getElementById('end-time').value;
         modal.style.display = 'none';
     });
 
     /* ============================================================
-       KARAOKE – SINCRONIZAÇÃO COM ÁUDIO
+       KARAOKE
     ============================================================ */
     audio.addEventListener('timeupdate', () => {
         const currentMs = audio.currentTime * 1000;
@@ -116,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const start = Number(word.dataset.start);
             const end = Number(word.dataset.end);
 
-            // 🔥 ignora palavras sem timing
             if (Number.isNaN(start) || Number.isNaN(end)) {
                 word.classList.remove('active');
                 return;
@@ -129,30 +158,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    /* ============================================================
+       PAINEL DE ESTILO – SINCRONIZA COM PALAVRA
+    ============================================================ */
+    function syncStylePanel(word) {
+        if (!word || !stylePanel) return;
+
+        document.getElementById('font-family').value = word.dataset.fontFamily || '';
+        document.getElementById('font-size').value = word.dataset.fontSize || '';
+        document.getElementById('letter-spacing').value = word.dataset.letterSpacing || '';
+        document.getElementById('line-height').value = word.dataset.lineHeight || '';
+        document.getElementById('style-color').value = word.dataset.color || '#000000';
+        document.getElementById('style-background').value = word.dataset.background || '#ffffff';
+    }
+
+    /* ============================================================
+       PAINEL DE ESTILO – APLICAÇÕES
+    ============================================================ */
+    document.getElementById('font-family').addEventListener('change', e => {
+        if (!activeWord) return;
+        activeWord.style.fontFamily = e.target.value;
+        activeWord.dataset.fontFamily = e.target.value;
+    });
+
+    document.getElementById('font-size').addEventListener('change', e => {
+        if (!activeWord) return;
+        activeWord.style.fontSize = `${e.target.value}px`;
+        activeWord.dataset.fontSize = e.target.value;
+    });
+
+    document.getElementById('letter-spacing').addEventListener('input', e => {
+        if (!activeWord) return;
+        activeWord.style.letterSpacing = `${e.target.value}em`;
+        activeWord.dataset.letterSpacing = `${e.target.value}em`;
+    });
+
+    document.getElementById('line-height').addEventListener('input', e => {
+        if (!activeWord) return;
+        activeWord.style.lineHeight = e.target.value;
+        activeWord.dataset.lineHeight = e.target.value;
+    });
+
+    document.getElementById('style-color').addEventListener('input', e => {
+        if (!activeWord) return;
+        activeWord.style.color = e.target.value;
+        activeWord.dataset.color = e.target.value;
+    });
+
+    document.getElementById('style-background').addEventListener('input', e => {
+        if (!activeWord) return;
+        activeWord.style.backgroundColor = e.target.value;
+        activeWord.dataset.background = e.target.value;
+    });
+
+    document.querySelectorAll('#word-style-panel button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!activeWord) return;
+
+            const style = btn.dataset.style;
+
+            if (style === 'bold') {
+                const v = activeWord.style.fontWeight === 'bold' ? 'normal' : 'bold';
+                activeWord.style.fontWeight = v;
+                activeWord.dataset.fontWeight = v;
+            }
+
+            if (style === 'italic') {
+                const v = activeWord.style.fontStyle === 'italic' ? 'normal' : 'italic';
+                activeWord.style.fontStyle = v;
+                activeWord.dataset.fontStyle = v;
+            }
+
+            if (style === 'underline') {
+                const v = activeWord.style.textDecoration === 'underline' ? 'none' : 'underline';
+                activeWord.style.textDecoration = v;
+                activeWord.dataset.underline = v === 'underline' ? 1 : 0;
+            }
+        });
+    });
 
     /* ============================================================
        SALVAR TRANSCRIÇÃO
     ============================================================ */
     document.getElementById('save-editor').addEventListener('click', async () => {
 
-        // 🔴 TEXTO MODIFICADO → REBUILD
         if (needsRebuild) {
             const ok = confirm(
                 'O texto foi alterado. A transcrição será reorganizada automaticamente. Continuar?'
             );
-
             if (!ok) return;
 
-            await rebuildTranscript();
+            await fetch(
+                `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': LK_EDITOR.nonce
+                    },
+                    body: JSON.stringify({ text: extractPlainText() })
+                }
+            );
+
+            location.reload();
             return;
         }
 
-        // 🟢 ALTERAÇÃO NORMAL (tempo, grupo, ordem)
         const words = [...editor.querySelectorAll('.word')].map(w => ({
             id: w.dataset.id,
             word: w.innerText.trim(),
             start_ms: w.dataset.start,
-            end_ms: w.dataset.end
+            end_ms: w.dataset.end,
+
+            font_family: w.dataset.fontFamily || null,
+            font_size: w.dataset.fontSize || null,
+            font_weight: w.dataset.fontWeight || null,
+            font_style: w.dataset.fontStyle || null,
+            underline: w.dataset.underline == 1 ? 1 : 0,
+            color: w.dataset.color || null,
+            background: w.dataset.background || null,
+            letter_spacing: w.dataset.letterSpacing || null,
+            line_height: w.dataset.lineHeight || null
         }));
 
         await fetch(
@@ -169,26 +295,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
         alert('Salvo com sucesso');
     });
-
-    /* ============================================================
-       REBUILD TRANSCRIPT (FONTE DA VERDADE = BANCO)
-    ============================================================ */
-    async function rebuildTranscript() {
-        const text = editor.innerText.trim();
-
-        await fetch(
-            `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': LK_EDITOR.nonce
-                },
-                body: JSON.stringify({ text })
-            }
-        );
-
-        location.reload(); // seguro e consistente
-    }
 
 });

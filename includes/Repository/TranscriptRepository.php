@@ -95,23 +95,54 @@ class TranscriptRepository
     /**
      * Insere palavras em lote (word / linebreak)
      */
-    public static function insert_words_bulk($transcript_id, array $words)
+    public static function insert_words_bulk(int $transcript_id, array $words): void
     {
         global $wpdb;
 
         foreach ($words as $word) {
+
             $wpdb->insert(
                 self::words_table(),
                 [
                     'transcript_id' => (int) $transcript_id,
-                    'idx' => (int) $word['idx'],
+                    'idx' => (int) ($word['idx'] ?? 0),
                     'word' => sanitize_text_field($word['word']),
                     'type' => $word['type'] ?? 'word',
-                    'start_ms' => $word['start_ms'] ?? null,
-                    'end_ms' => $word['end_ms'] ?? null,
-                    'group_id' => $word['group_id'] ?? null,
+
+                    'start_ms' => isset($word['start_ms']) ? (int) $word['start_ms'] : null,
+                    'end_ms' => isset($word['end_ms']) ? (int) $word['end_ms'] : null,
+                    'group_id' => isset($word['group_id']) ? (int) $word['group_id'] : null,
+
+                    /* ===== ESTILOS ===== */
+                    'font_family' => $word['font_family'] ?? null,
+                    'font_size' => isset($word['font_size']) ? (int) $word['font_size'] : null,
+                    'font_weight' => $word['font_weight'] ?? null,
+                    'font_style' => $word['font_style'] ?? null,
+                    'underline' => !empty($word['underline']) ? 1 : 0,
+                    'color' => $word['color'] ?? null,
+                    'background' => $word['background'] ?? null,
+                    'letter_spacing' => $word['letter_spacing'] ?? null,
+                    'line_height' => $word['line_height'] ?? null,
                 ],
-                ['%d', '%d', '%s', '%s', '%d', '%d', '%d']
+                [
+                    '%d', // transcript_id
+                    '%d', // idx
+                    '%s', // word
+                    '%s', // type
+                    '%d', // start_ms
+                    '%d', // end_ms
+                    '%d', // group_id
+
+                    '%s', // font_family
+                    '%d', // font_size
+                    '%s', // font_weight
+                    '%s', // font_style
+                    '%d', // underline
+                    '%s', // color
+                    '%s', // background
+                    '%s', // letter_spacing
+                    '%s', // line_height
+                ]
             );
         }
     }
@@ -232,13 +263,23 @@ class TranscriptRepository
     {
         self::delete_words($transcript_id);
 
+        // ✔ remove slashes
         $text = wp_unslash($text);
-        $text = trim($text);
 
-        // Divide mantendo linhas vazias
-        $lines = preg_split("/\r\n|\n|\r/", $text);
-        $idx = 0;
+        // ✔ normaliza quebras de linha
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
+        // ✔ no máximo 1 linha em branco
+        $text = preg_replace("/\n{3,}/", "\n\n", $text);
+
+        $lines = explode("\n", $text);
+
+        /* =====================================================
+         * 1️⃣ MONTA TOKENS (SEM TEMPO AINDA)
+         * ===================================================== */
         $tokens = [];
+        $idx = 0;
+        $wordCount = 0;
 
         foreach ($lines as $line) {
 
@@ -256,10 +297,11 @@ class TranscriptRepository
                         'end_ms' => null,
                         'group_id' => null,
                     ];
+                    $wordCount++;
                 }
             }
 
-            // 🔥 SEMPRE adiciona linebreak (inclusive para linhas vazias)
+            // linebreak estrutural (sem tempo)
             $tokens[] = [
                 'idx' => $idx++,
                 'word' => "\n",
@@ -270,7 +312,42 @@ class TranscriptRepository
             ];
         }
 
+        /* =====================================================
+         * 2️⃣ BUSCA DURAÇÃO DO ÁUDIO
+         * ===================================================== */
+
+        // 🔥 AJUSTE AQUI SE SUA DURAÇÃO VIER DE OUTRO LUGAR
+        $durationMs = (int) get_post_meta($transcript_id, '_audio_duration_ms', true);
+
+        // fallback de segurança (30s)
+        if ($durationMs <= 0) {
+            $durationMs = 30000;
+        }
+
+        /* =====================================================
+         * 3️⃣ DISTRIBUI TEMPO APENAS PARA PALAVRAS
+         * ===================================================== */
+
+        if ($wordCount > 0) {
+            $step = (int) floor($durationMs / $wordCount);
+            $currentTime = 0;
+
+            foreach ($tokens as &$token) {
+                if ($token['type'] === 'word') {
+                    $token['start_ms'] = $currentTime;
+                    $token['end_ms'] = $currentTime + $step;
+                    $currentTime += $step;
+                }
+            }
+            unset($token);
+        }
+
+        /* =====================================================
+         * 4️⃣ SALVA NO BANCO
+         * ===================================================== */
+
         self::insert_words_bulk($transcript_id, $tokens);
     }
+
 
 }

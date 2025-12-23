@@ -2,20 +2,12 @@
 
 namespace LeiturinhaKaraoke;
 
-/**
- * Ativador do plugin Leiturinha-Karaoke
- * Responsável por criar e atualizar as tabelas do banco
- */
-
 if (!defined('ABSPATH')) {
     exit;
 }
 
 class Activator
 {
-    /**
-     * Executado na ativação do plugin
-     */
     public static function activate(): void
     {
         global $wpdb;
@@ -26,9 +18,8 @@ class Activator
 
         /**
          * Versão do schema do banco
-         * (incrementar sempre que mudar estrutura)
          */
-        $db_version = '1.4.0';
+        $db_version = '1.5.0';
 
         /* =====================================================
          * TABELA: lk_transcripts
@@ -52,7 +43,7 @@ class Activator
         ";
 
         /* =====================================================
-         * TABELA: lk_transcript_words
+         * TABELA: lk_transcript_words (COM ESTILO COMPLETO)
          * ===================================================== */
         $table_words = $wpdb->prefix . 'lk_transcript_words';
 
@@ -63,11 +54,25 @@ class Activator
                 idx INT NOT NULL,
                 word VARCHAR(255) NOT NULL,
                 type ENUM('word','linebreak') NOT NULL DEFAULT 'word',
+
                 start_ms INT NULL,
                 end_ms INT NULL,
                 group_id BIGINT UNSIGNED NULL,
+
+                /* ===== ESTILOS POR PALAVRA ===== */
+                font_family VARCHAR(100) NULL,
+                font_size INT NULL,
+                font_weight VARCHAR(20) NULL,
+                font_style VARCHAR(20) NULL,
+                underline TINYINT(1) NOT NULL DEFAULT 0,
+                color VARCHAR(20) NULL,
+                background VARCHAR(20) NULL,
+                letter_spacing VARCHAR(20) NULL,
+                line_height VARCHAR(20) NULL,
+
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+
                 PRIMARY KEY (id),
                 KEY transcript_id (transcript_id),
                 KEY idx (idx),
@@ -76,11 +81,9 @@ class Activator
             ) {$charset_collate};
         ";
 
-        // Criação / atualização segura (dbDelta cuida do ALTER)
         dbDelta($sql_transcripts);
         dbDelta($sql_words);
 
-        // Salva versão do banco
         update_option('lk_db_version', $db_version);
     }
 }

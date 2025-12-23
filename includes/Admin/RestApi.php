@@ -111,23 +111,40 @@ class RestApi
         }
 
         foreach ($params['words'] as $word) {
+
             if (empty($word['id'])) {
                 continue;
             }
 
-            TranscriptRepository::updateWord((int) $word['id'], [
-                'word' => sanitize_text_field($word['word'] ?? ''),
-                'start_ms' => isset($word['start_ms']) && is_numeric($word['start_ms'])
-                    ? (int) $word['start_ms']
-                    : null,
-                'end_ms' => isset($word['end_ms']) && is_numeric($word['end_ms'])
-                    ? (int) $word['end_ms']
-                    : null,
-            ]);
+            TranscriptRepository::updateWord(
+                (int) $word['id'],
+                [
+                    // TEXTO + TEMPO
+                    'word' => sanitize_text_field($word['word'] ?? ''),
+                    'start_ms' => isset($word['start_ms']) && is_numeric($word['start_ms'])
+                        ? (int) $word['start_ms']
+                        : null,
+                    'end_ms' => isset($word['end_ms']) && is_numeric($word['end_ms'])
+                        ? (int) $word['end_ms']
+                        : null,
+
+                    // ===== ESTILOS =====
+                    'font_family' => $word['font_family'] ?? null,
+                    'font_size' => isset($word['font_size']) ? (int) $word['font_size'] : null,
+                    'font_weight' => $word['font_weight'] ?? null,
+                    'font_style' => $word['font_style'] ?? null,
+                    'underline' => !empty($word['underline']) ? 1 : 0,
+                    'color' => $word['color'] ?? null,
+                    'background' => $word['background'] ?? null,
+                    'letter_spacing' => $word['letter_spacing'] ?? null,
+                    'line_height' => $word['line_height'] ?? null,
+                ]
+            );
         }
 
         return ['status' => 'success'];
     }
+
 
     /**
      * Une palavras
