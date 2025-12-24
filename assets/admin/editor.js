@@ -16,6 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ============================================================ */
     function extractPlainText() {
         const words = [...editor.querySelectorAll('.word')];
+
+        // 🚨 TEXTO EDITADO (não estruturado)
+        if (words.length === 0) {
+            needsRebuild = true;
+
+            return editor.innerText
+                .replace(/[ \t]+\n/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+        }
+
+        // ✅ TEXTO ORDENADO
         let text = '';
 
         words.forEach((word, index) => {
@@ -27,15 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const next = words[index + 1];
             if (!next) return;
 
-            // 🔎 Detecta mudança de linha pelo DIV ancestral
             const blockNow = word.closest('div');
             const blockNext = next.closest('div');
 
-            if (blockNow !== blockNext) {
-                text += '\n';
-            } else {
-                text += ' ';
-            }
+            text += blockNow !== blockNext ? '\n' : ' ';
         });
 
         return text
@@ -43,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/\n{3,}/g, '\n\n')
             .trim();
     }
+
 
 
 
@@ -258,27 +266,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log(extractPlainText());
 
-        // if (needsRebuild) {
-        //     const ok = confirm(
-        //         'O texto foi alterado. A transcrição será reorganizada automaticamente. Continuar?'
-        //     );
-        //     if (!ok) return;
+        if (needsRebuild) {
+            const ok = confirm(
+                'O texto foi alterado. A transcrição será reorganizada automaticamente. Continuar?'
+            );
+            if (!ok) return;
 
-        //     await fetch(
-        //         `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
-        //         {
-        //             method: 'POST',
-        //             headers: {
-        //                 'Content-Type': 'application/json',
-        //                 'X-WP-Nonce': LK_EDITOR.nonce
-        //             },
-        //             body: JSON.stringify({ text: extractPlainText() })
-        //         }
-        //     );
+            await fetch(
+                `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': LK_EDITOR.nonce
+                    },
+                    body: JSON.stringify({ text: extractPlainText() })
+                }
+            );
 
-        //     // location.reload();
-        //     return;
-        // }
+            location.reload();
+            return;
+        }
 
         const words = [...editor.querySelectorAll('.word')].map(w => ({
             id: w.dataset.id,
