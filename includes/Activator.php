@@ -19,7 +19,7 @@ class Activator
         /**
          * Versão do schema do banco
          */
-        $db_version = '1.5.0';
+        $db_version = '1.6.0';
 
         /* =====================================================
          * TABELA: lk_transcripts
@@ -29,6 +29,7 @@ class Activator
         $sql_transcripts = "
             CREATE TABLE {$table_transcripts} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                code VARCHAR(100) NULL,
                 attachment_id BIGINT UNSIGNED NOT NULL,
                 public_url TEXT NOT NULL,
                 aws_job_name VARCHAR(191) NULL,
@@ -36,7 +37,9 @@ class Activator
                 language VARCHAR(10) NOT NULL DEFAULT 'pt-BR',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+
                 PRIMARY KEY (id),
+                UNIQUE KEY code (code),
                 KEY attachment_id (attachment_id),
                 KEY status (status)
             ) {$charset_collate};
