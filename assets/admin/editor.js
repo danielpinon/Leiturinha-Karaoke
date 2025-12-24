@@ -15,22 +15,36 @@ document.addEventListener('DOMContentLoaded', () => {
        UTIL – EXTRAI TEXTO PURO (SEM HTML)
     ============================================================ */
     function extractPlainText() {
+        const words = [...editor.querySelectorAll('.word')];
         let text = '';
 
-        editor.childNodes.forEach(node => {
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
+        words.forEach((word, index) => {
+            const currentText = word.innerText.trim();
+            if (!currentText) return;
 
-            if (node.classList.contains('word')) {
-                text += node.innerText + ' ';
-            }
+            text += currentText;
 
-            if (node.classList.contains('line-break')) {
+            const next = words[index + 1];
+            if (!next) return;
+
+            // 🔎 Detecta mudança de linha pelo DIV ancestral
+            const blockNow = word.closest('div');
+            const blockNext = next.closest('div');
+
+            if (blockNow !== blockNext) {
                 text += '\n';
+            } else {
+                text += ' ';
             }
         });
 
-        return text.replace(/[ \t]+\n/g, '\n').trimEnd();
+        return text
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     }
+
+
 
     /* ============================================================
        TOOLBAR VISUAL (NÃO PERSISTE)
@@ -242,27 +256,29 @@ document.addEventListener('DOMContentLoaded', () => {
     ============================================================ */
     document.getElementById('save-editor').addEventListener('click', async () => {
 
-        if (needsRebuild) {
-            const ok = confirm(
-                'O texto foi alterado. A transcrição será reorganizada automaticamente. Continuar?'
-            );
-            if (!ok) return;
+        console.log(extractPlainText());
 
-            await fetch(
-                `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': LK_EDITOR.nonce
-                    },
-                    body: JSON.stringify({ text: extractPlainText() })
-                }
-            );
+        // if (needsRebuild) {
+        //     const ok = confirm(
+        //         'O texto foi alterado. A transcrição será reorganizada automaticamente. Continuar?'
+        //     );
+        //     if (!ok) return;
 
-            location.reload();
-            return;
-        }
+        //     await fetch(
+        //         `${LK_EDITOR.rest_url}/transcript/${LK_EDITOR.transcript_id}/rebuild`,
+        //         {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //                 'X-WP-Nonce': LK_EDITOR.nonce
+        //             },
+        //             body: JSON.stringify({ text: extractPlainText() })
+        //         }
+        //     );
+
+        //     // location.reload();
+        //     return;
+        // }
 
         const words = [...editor.querySelectorAll('.word')].map(w => ({
             id: w.dataset.id,

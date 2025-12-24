@@ -3,7 +3,7 @@
  * Plugin Name: Leiturinha – Karaoke
  * Description: Leitura sincronizada com áudio, destaque palavra por palavra e transcrição via AWS.
  * Version: 1.0.0
- * Author: Ágil Desenvolvimento
+ * Author: Mentores
  * Text Domain: leiturinha-karaoke
  */
 

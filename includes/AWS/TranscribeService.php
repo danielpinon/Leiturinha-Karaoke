@@ -118,7 +118,7 @@ class TranscribeService
         $elapsed = 0;
 
         do {
-            // sleep(4);
+            sleep(4);
             $elapsed += 4;
 
             $status = $this->transcribe->getTranscriptionJob([
@@ -155,7 +155,7 @@ class TranscribeService
         $jobName = $this->startTranscription($upload['key'], $language);
 
         // Wait
-        $jsonUrl = $this->waitForCompletion($jobName);
+        $jsonUrl = $this->waitForCompletion($jobName, 480);
 
         // Download JSON
         $json = file_get_contents($jsonUrl);

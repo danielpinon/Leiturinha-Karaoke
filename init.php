@@ -6,6 +6,7 @@ use LeiturinhaKaraoke\Admin\Menu;
 use LeiturinhaKaraoke\Admin\Actions;
 use LeiturinhaKaraoke\Admin\RestApi;
 use LeiturinhaKaraoke\Frontend\Shortcode;
+use LeiturinhaKaraoke\ACF\Fields;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -19,6 +20,9 @@ class Init
         Actions::init();
         RestApi::init();
         Shortcode::init();
+
+        // 🔥 ACF
+        Fields::init();
     }
 }
 
