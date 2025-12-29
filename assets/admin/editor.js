@@ -26,4 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ?.addEventListener('click', () => {
             LKEditorTimeOrganizerUI.open();
         });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.LKEditorToolbar) {
+            LKEditorToolbar.init();
+        }
+    });
+
 });
