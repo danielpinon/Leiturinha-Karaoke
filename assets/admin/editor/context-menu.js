@@ -120,6 +120,11 @@ window.LKEditorContextMenu = {
             document.getElementById('end-time').value;
 
         modal.style.display = 'none';
+
+        // 🔥 RECONSTRÓI TIMELINE
+        if (window.LKEditorKaraoke) {
+            LKEditorKaraoke.buildTimeline();
+        }
     },
 
     groupSelectedWords() {
@@ -134,6 +139,10 @@ window.LKEditorContextMenu = {
             w.dataset.end = end;
             w.classList.add('grouped');
         });
+
+        if (window.LKEditorKaraoke) {
+            LKEditorKaraoke.buildTimeline();
+        }
     }
 
 };

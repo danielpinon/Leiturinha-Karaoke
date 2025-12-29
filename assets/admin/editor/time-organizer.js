@@ -144,6 +144,10 @@ window.LKEditorTimeOrganizer = {
 
         window.LKEditorState.needsRebuild = true;
 
+        if (window.LKEditorKaraoke) {
+            LKEditorKaraoke.buildTimeline();
+        }
+
         console.info(
             `⏱ Tempos reorganizados — final: ${tempoFinal} ms`,
             { ignorePunctuation, manualWordTimes }

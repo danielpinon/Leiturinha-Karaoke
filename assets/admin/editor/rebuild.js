@@ -16,7 +16,7 @@ window.LKEditorRebuild = {
 
         // Colagem
         editor.addEventListener('paste', () => {
-            window.LKEditorState.needsRebuild = true;
+            this.invalidate();
         });
     },
 
@@ -25,9 +25,17 @@ window.LKEditorRebuild = {
             window.LKEditorUtils.extractPlainText();
 
         if (current !== window.LKEditorState.lastText) {
-            window.LKEditorState.needsRebuild = true;
             window.LKEditorState.lastText = current;
+            this.invalidate();
+        }
+    },
+
+    invalidate() {
+        window.LKEditorState.needsRebuild = true;
+
+        // 🔥 invalida karaoke imediatamente
+        if (window.LKEditorKaraoke) {
+            window.LKEditorKaraoke.reset?.();
         }
     }
-
 };

@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     LKEditorContextMenu.init(); // ← NOVO
     LKEditorRebuild.init();     // ← NOVO
     LKEditorKaraoke.init();
+    LKEditorKaraoke.buildTimeline(); // ✅ garantia extra
     LKEditorSave.init();
     LKEditorTimeOrganizerUI.init();
 
