@@ -5,10 +5,11 @@ window.LKEditorKaraoke = {
     init() {
         const state = window.LKEditorState;
 
-        if (!state.audio || !state.editor) return;
+        if (!state.editor) return;
 
         this.buildTimeline();
         this.bind();
+        this.loop(); // 🔥 sempre ativo
     },
 
     timeline: [],
@@ -16,55 +17,46 @@ window.LKEditorKaraoke = {
     activeIndex: -1,
 
     buildTimeline() {
-        const state = window.LKEditorState;
+        const editor = window.LKEditorState.editor;
 
-        this.timeline = [...state.editor.querySelectorAll('.word')]
-            .map(w => {
-                let start = parseInt(w.dataset.start, 10) || 0;
-                let end   = parseInt(w.dataset.end, 10) || start;
+        this.timeline = [...editor.querySelectorAll('.word')].map(w => {
+            let start = parseInt(w.dataset.start, 10) || 0;
+            let end   = parseInt(w.dataset.end, 10) || start;
 
-                // tempo mínimo no editor
-                if (end - start < 80) {
-                    end = start + 80;
-                }
+            if (end - start < 80) {
+                end = start + 80;
+            }
 
-                return {
-                    el: w,
-                    start,
-                    end
-                };
-            });
+            return { el: w, start, end };
+        });
     },
 
     bind() {
-        const audio = window.LKEditorState.audio;
+        const state = window.LKEditorState;
 
-        audio.addEventListener('play', () => {
-            cancelAnimationFrame(this.rafId);
-            this.rafId = requestAnimationFrame(this.sync.bind(this));
-        });
+        // 🔊 áudio atualiza tempo virtual
+        if (state.audio) {
+            state.audio.addEventListener('timeupdate', () => {
+                state.currentTimeMs = state.audio.currentTime * 1000;
+            });
+        }
 
-        audio.addEventListener('pause', () => {
-            cancelAnimationFrame(this.rafId);
-        });
-
-        audio.addEventListener('ended', () => {
-            cancelAnimationFrame(this.rafId);
-            this.clear();
+        // ✍️ edição manual (qualquer mudança de tempo)
+        document.addEventListener('lk:timechange', e => {
+            state.currentTimeMs = e.detail.timeMs;
         });
     },
 
-    sync() {
-        const audio = window.LKEditorState.audio;
-        const currentMs = audio.currentTime * 1000;
+    loop() {
+        const time = window.LKEditorState.currentTimeMs || 0;
 
         let i = this.activeIndex;
 
-        while (i + 1 < this.timeline.length && currentMs >= this.timeline[i + 1].start) {
+        while (i + 1 < this.timeline.length && time >= this.timeline[i + 1].start) {
             i++;
         }
 
-        while (i > 0 && currentMs < this.timeline[i].start) {
+        while (i > 0 && time < this.timeline[i].start) {
             i--;
         }
 
@@ -72,7 +64,7 @@ window.LKEditorKaraoke = {
             this.setActive(i);
         }
 
-        this.rafId = requestAnimationFrame(this.sync.bind(this));
+        this.rafId = requestAnimationFrame(this.loop.bind(this));
     },
 
     setActive(index) {
@@ -81,22 +73,9 @@ window.LKEditorKaraoke = {
         }
 
         if (this.timeline[index]) {
-            const el = this.timeline[index].el;
-            el.classList.add('active');
-
-            el.scrollIntoView({
-                behavior: 'auto',
-                block: 'center'
-            });
+            this.timeline[index].el.classList.add('active');
         }
 
         this.activeIndex = index;
-    },
-
-    clear() {
-        if (this.activeIndex >= 0) {
-            this.timeline[this.activeIndex].el.classList.remove('active');
-        }
-        this.activeIndex = -1;
     }
 };

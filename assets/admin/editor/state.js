@@ -10,8 +10,13 @@ window.LKEditorState = {
     activeWord: null,
     needsRebuild: false,
     lastText: '',
+    currentTimeMs: 0,
 
-    init(elements) {
-        Object.assign(this, elements);
+    init() {
+        this.editor = document.getElementById('editor-content');
+        this.audio  = document.getElementById('lk-audio');
+        this.menu   = document.getElementById('context-menu');
+        this.modal  = document.getElementById('time-modal');
+        this.currentTimeMs = 0;
     }
 };
