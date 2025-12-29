@@ -41,20 +41,107 @@ class EditorPage
             [],
             '6.5.1'
         );
+        // ================================
+        // SCRIPTS DO EDITOR (MODULAR)
+        // ================================
 
+        // Estado global (DEVE VIR PRIMEIRO)
         wp_enqueue_script(
-            'lk-editor-js',
-            LK_PLUGIN_URL . 'assets/admin/editor.js',
+            'lk-editor-state',
+            LK_PLUGIN_URL . 'assets/admin/editor/state.js',
             [],
             LK_PLUGIN_VERSION,
             true
         );
 
-        wp_localize_script('lk-editor-js', 'LK_EDITOR', [
+        // Utils
+        wp_enqueue_script(
+            'lk-editor-utils',
+            LK_PLUGIN_URL . 'assets/admin/editor/utils.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Rebuild (detecção de alteração de texto)
+        wp_enqueue_script(
+            'lk-editor-rebuild',
+            LK_PLUGIN_URL . 'assets/admin/editor/rebuild.js',
+            ['lk-editor-state', 'lk-editor-utils'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Seleção de palavras
+        wp_enqueue_script(
+            'lk-editor-selection',
+            LK_PLUGIN_URL . 'assets/admin/editor/selection.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Painel de estilo
+        wp_enqueue_script(
+            'lk-editor-style-panel',
+            LK_PLUGIN_URL . 'assets/admin/editor/style-panel.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Menu contextual
+        wp_enqueue_script(
+            'lk-editor-context-menu',
+            LK_PLUGIN_URL . 'assets/admin/editor/context-menu.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Karaoke (sincronização com áudio)
+        wp_enqueue_script(
+            'lk-editor-karaoke',
+            LK_PLUGIN_URL . 'assets/admin/editor/karaoke.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Salvar / persistência
+        wp_enqueue_script(
+            'lk-editor-save',
+            LK_PLUGIN_URL . 'assets/admin/editor/save.js',
+            ['lk-editor-state', 'lk-editor-utils'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Loader principal (BOOTSTRAP FINAL)
+        wp_enqueue_script(
+            'lk-editor-main',
+            LK_PLUGIN_URL . 'assets/admin/editor.js',
+            [
+                'lk-editor-state',
+                'lk-editor-utils',
+                'lk-editor-rebuild',
+                'lk-editor-selection',
+                'lk-editor-style-panel',
+                'lk-editor-context-menu',
+                'lk-editor-karaoke',
+                'lk-editor-save',
+            ],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+        // Dados do WP → JS
+        wp_localize_script('lk-editor-main', 'LK_EDITOR', [
             'rest_url' => rest_url('leiturinha-karaoke/v1'),
             'nonce' => wp_create_nonce('wp_rest'),
             'transcript_id' => $transcript_id,
         ]);
+
         ?>
 
 
