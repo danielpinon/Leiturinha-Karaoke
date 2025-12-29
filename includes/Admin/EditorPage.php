@@ -136,6 +136,16 @@ class EditorPage
             true
         );
 
+        wp_enqueue_script(
+            'lk-vosk-browser',
+            'https://unpkg.com/vosk-browser/dist/vosk.js',
+            [],
+            null,
+            true
+        );
+
+
+
         // Loader principal (BOOTSTRAP FINAL)
         wp_enqueue_script(
             'lk-editor-main',
