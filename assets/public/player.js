@@ -1,61 +1,109 @@
 document.addEventListener('DOMContentLoaded', () => {
+
     document.querySelectorAll('.lk-karaoke-wrapper').forEach(wrapper => {
 
         const audio = wrapper.querySelector('.lk-karaoke-audio');
-        const words = Array.from(wrapper.querySelectorAll('.lk-word'));
+        const wordEls = Array.from(wrapper.querySelectorAll('.lk-word'));
 
-        if (!audio || !words.length) return;
+        if (!audio || !wordEls.length) return;
 
         /* =====================================================
-         * CLIQUE NA PALAVRA → SEEK NO ÁUDIO
+         * PRÉ-PROCESSAMENTO (PERFORMANCE)
          * ===================================================== */
-        words.forEach(word => {
-            word.addEventListener('click', () => {
-                const start = parseInt(word.dataset.start, 10);
-                if (!isNaN(start)) {
-                    audio.currentTime = start / 1000;
-                    audio.play();
-                }
+        const timeline = wordEls.map(w => {
+            let start = parseInt(w.dataset.start, 10) || 0;
+            let end   = parseInt(w.dataset.end, 10) || start;
+
+            // 🔒 tempo mínimo por palavra (evita “sumir”)
+            if (end - start < 80) {
+                end = start + 80;
+            }
+
+            return {
+                el: w,
+                start,
+                end
+            };
+        });
+
+        /* =====================================================
+         * CLIQUE → SEEK
+         * ===================================================== */
+        timeline.forEach(item => {
+            item.el.addEventListener('click', () => {
+                audio.currentTime = item.start / 1000;
+                audio.play();
             });
         });
 
         /* =====================================================
-         * SYNC + SCROLL
+         * KARAOKE LOOP (RAF)
          * ===================================================== */
-        let lastActive = null;
+        let rafId = null;
+        let activeIndex = -1;
 
-        audio.addEventListener('timeupdate', () => {
+        function sync() {
             const currentMs = audio.currentTime * 1000;
 
-            words.forEach(word => {
-                const start = parseInt(word.dataset.start, 10);
-                const end   = parseInt(word.dataset.end, 10);
+            // Busca incremental (não varre tudo)
+            let i = activeIndex;
 
-                if (currentMs >= start && currentMs <= end) {
-                    if (!word.classList.contains('active')) {
-                        word.classList.add('active');
+            // Avança
+            while (i + 1 < timeline.length && currentMs >= timeline[i + 1].start) {
+                i++;
+            }
 
-                        // Scroll automático
-                        if (lastActive !== word) {
-                            word.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-                            lastActive = word;
-                        }
-                    }
-                } else {
-                    word.classList.remove('active');
+            // Recuo (seek manual)
+            while (i > 0 && currentMs < timeline[i].start) {
+                i--;
+            }
+
+            if (i !== activeIndex) {
+                // remove anterior
+                if (activeIndex >= 0) {
+                    timeline[activeIndex].el.classList.remove('active');
                 }
-            });
-        });
+
+                // ativa nova
+                if (timeline[i] && currentMs < timeline[i].end) {
+                    const el = timeline[i].el;
+                    el.classList.add('active');
+
+                    // Scroll só quando muda
+                    el.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'center'
+                    });
+
+                    activeIndex = i;
+                }
+            }
+
+            rafId = requestAnimationFrame(sync);
+        }
 
         /* =====================================================
-         * RESET AO FINAL
+         * CONTROLES DE PLAYBACK
          * ===================================================== */
-        audio.addEventListener('ended', () => {
-            words.forEach(word => word.classList.remove('active'));
-            lastActive = null;
+        audio.addEventListener('play', () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(sync);
         });
+
+        audio.addEventListener('pause', () => {
+            cancelAnimationFrame(rafId);
+        });
+
+        audio.addEventListener('ended', () => {
+            cancelAnimationFrame(rafId);
+
+            if (activeIndex >= 0) {
+                timeline[activeIndex].el.classList.remove('active');
+            }
+
+            activeIndex = -1;
+        });
+
     });
+
 });
