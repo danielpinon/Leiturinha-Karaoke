@@ -16,4 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     LKEditorKaraoke.init();
     LKEditorSave.init();
 
+    document.getElementById('toggle-case')
+    ?.addEventListener('click', () => {
+        window.LKEditorUtils.toggleCase();
+    });
+
 });

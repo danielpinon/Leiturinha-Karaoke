@@ -192,21 +192,24 @@ class EditorPage
                     </select>
                 </div>
 
-                <div class="style-group">
+                <div class="style-group" style="width: 1000px;">
                     <label>Estilo</label>
                     <div class="style-buttons">
                         <button data-style="bold">B</button>
                         <button data-style="italic">I</button>
                         <button data-style="underline">U</button>
+                        <button id="toggle-case" title="Alternar caixa">
+                            Aa
+                        </button>
                     </div>
                 </div>
 
-                <div class="style-group" style="width: 80px;">
+                <div class="style-group" style="width: 70px;">
                     <label>Cor texto</label>
                     <input type="color" id="style-color">
                 </div>
 
-                <div class="style-group" style="width: 80px;">
+                <div class="style-group" style="width: 70px;">
                     <label>Cor fundo</label>
                     <input type="color" id="style-background">
                 </div>

@@ -86,6 +86,39 @@ window.LKEditorUtils = {
         const editor = window.LKEditorState.editor;
         return editor.querySelectorAll('br').length > 0;
     }
-
-
 };
+
+window.LKEditorUtils.toggleCase = function () {
+    const { editor } = window.LKEditorState;
+    const words = editor.querySelectorAll('.word');
+
+    if (!words.length) return;
+
+    // Detecta se a maioria está em caixa alta
+    let upperCount = 0;
+
+    words.forEach(w => {
+        const text = w.innerText.trim();
+        if (text && text === text.toUpperCase()) {
+            upperCount++;
+        }
+    });
+
+    const toUpper = upperCount < words.length / 2;
+
+    words.forEach(word => {
+        const original = word.innerText;
+        const transformed = toUpper
+            ? original.toUpperCase()
+            : original.toLowerCase();
+
+        word.innerText = transformed;
+
+        // mantém consistência do dataset
+        word.dataset.word = transformed;
+    });
+
+    // ⚠️ marca como alteração estrutural
+    window.LKEditorState.needsRebuild = true;
+};
+
