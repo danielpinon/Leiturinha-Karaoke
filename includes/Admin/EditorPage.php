@@ -117,6 +117,15 @@ class EditorPage
             true
         );
 
+        wp_enqueue_script(
+            'lk-editor-time-organizer',
+            LK_PLUGIN_URL . 'assets/admin/editor/time-organizer.js',
+            ['lk-editor-state'],
+            LK_PLUGIN_VERSION,
+            true
+        );
+
+
         // Loader principal (BOOTSTRAP FINAL)
         wp_enqueue_script(
             'lk-editor-main',
