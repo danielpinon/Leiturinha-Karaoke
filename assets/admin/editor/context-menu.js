@@ -14,27 +14,42 @@ window.LKEditorContextMenu = {
 
             window.LKEditorState.activeWord = word;
 
-            // ===== POSICIONAMENTO ANCORADO NA PALAVRA =====
+            // ===== POSICIONAMENTO COLADO NA PALAVRA =====
             const rect = word.getBoundingClientRect();
 
-            // Garante que o menu tenha dimensão antes de calcular
+            // força cálculo real do tamanho
             menu.style.display = 'block';
             menu.style.visibility = 'hidden';
 
-            const menuWidth = menu.offsetWidth || 200;
-            const menuHeight = menu.offsetHeight || 50;
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
 
-            let left = rect.left + window.scrollX;
-            let top = rect.bottom + window.scrollY + 6;
+            // Centraliza horizontalmente na palavra
+            let left =
+                rect.left +
+                window.scrollX +
+                rect.width / 2 -
+                menuWidth / 2;
 
-            // Evita sair da tela pela direita
-            if (left + menuWidth > window.innerWidth) {
-                left = window.innerWidth - menuWidth - 12;
+            // Prioriza aparecer ACIMA da palavra
+            let top =
+                rect.top +
+                window.scrollY -
+                menuHeight -
+                4;
+
+            // Se não couber acima, joga para baixo
+            if (top < window.scrollY + 8) {
+                top =
+                    rect.bottom +
+                    window.scrollY +
+                    4;
             }
 
-            // Evita sair da tela por baixo
-            if (top + menuHeight > window.scrollY + window.innerHeight) {
-                top = rect.top + window.scrollY - menuHeight - 6;
+            // Evita sair da tela lateralmente
+            if (left < 8) left = 8;
+            if (left + menuWidth > window.innerWidth - 8) {
+                left = window.innerWidth - menuWidth - 8;
             }
 
             menu.style.left = `${left}px`;

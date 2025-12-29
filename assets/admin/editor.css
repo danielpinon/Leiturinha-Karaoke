@@ -266,3 +266,7 @@
 .modal-box button:hover {
     background: #1d4ed8;
 }
+
+#context-menu {
+    position: fixed; /* ERA absolute */
+}
