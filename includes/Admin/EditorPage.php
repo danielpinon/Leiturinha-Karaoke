@@ -125,6 +125,16 @@ class EditorPage
             true
         );
 
+        wp_enqueue_script(
+            'lk-editor-time-organizer-ui',
+            LK_PLUGIN_URL . 'assets/admin/editor/time-organizer-ui.js',
+            [
+                'lk-editor-state',
+                'lk-editor-time-organizer'
+            ],
+            LK_PLUGIN_VERSION,
+            true
+        );
 
         // Loader principal (BOOTSTRAP FINAL)
         wp_enqueue_script(
@@ -233,6 +243,14 @@ class EditorPage
                     <input type="number" step="0.1" id="line-height" placeholder="ex: 1.8">
                 </div>
 
+                <div class="style-group">
+                    <label>Ajustar tempos</label>
+                    <button id="open-time-organizer">
+                        <i class="fa-solid fa-clock"></i> Ajustar tempos
+                    </button>
+                </div>
+
+
             </div>
 
             <!-- EDITOR -->
@@ -304,6 +322,56 @@ class EditorPage
                     <label>Fim (ms)</label>
                     <input type="number" id="end-time">
                     <button id="save-time">Salvar</button>
+                </div>
+            </div>
+
+            <!-- MODAL AJUSTE DE TEMPOS -->
+            <div id="time-organizer-modal" class="lk-modal" style="display:none;">
+                <div class="lk-modal-box" style="max-width:720px;">
+
+                    <h3>Ajuste Avançado de Tempos</h3>
+
+                    <!-- TEMPO TOTAL -->
+                    <div class="lk-form-group">
+                        <label>Tempo total do áudio (ms)</label>
+                        <input type="number" id="organizer-total-time">
+                    </div>
+
+                    <!-- IGNORAR ACENTUAÇÃO -->
+                    <div class="lk-form-group">
+                        <label>Ignorar pontuação / acentuação?</label>
+                        <select id="organizer-ignore-punctuation">
+                            <option value="0">Não (padrão)</option>
+                            <option value="1">Sim</option>
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <h4>Ajustes manuais por palavra</h4>
+
+                    <!-- TABELA -->
+                    <table class="lk-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Palavra (ID)</th>
+                                <th>Tempo (ms)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="organizer-words-table"></tbody>
+                    </table>
+
+                    <button id="organizer-add-row" class="button">+ Adicionar palavra</button>
+
+                    <hr>
+
+                    <div class="lk-modal-actions">
+                        <button id="organizer-cancel" class="button">Cancelar</button>
+                        <button id="organizer-apply" class="button button-primary">
+                            Reorganizar tempos
+                        </button>
+                    </div>
                 </div>
             </div>
 

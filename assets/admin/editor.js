@@ -15,10 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
     LKEditorRebuild.init();     // ← NOVO
     LKEditorKaraoke.init();
     LKEditorSave.init();
+    LKEditorTimeOrganizerUI.init();
 
     document.getElementById('toggle-case')
-    ?.addEventListener('click', () => {
-        window.LKEditorUtils.toggleCase();
-    });
+        ?.addEventListener('click', () => {
+            window.LKEditorUtils.toggleCase();
+        });
 
+    document.getElementById('open-time-organizer')
+        ?.addEventListener('click', () => {
+            LKEditorTimeOrganizerUI.open();
+        });
 });
