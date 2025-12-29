@@ -43,9 +43,9 @@ class TranscriptRepository
 
         $data = [
             'attachment_id' => (int) $attachment_id,
-            'public_url'    => esc_url_raw($public_url),
-            'language'      => sanitize_text_field($language),
-            'status'        => 'pending',
+            'public_url' => esc_url_raw($public_url),
+            'language' => sanitize_text_field($language),
+            'status' => 'pending',
         ];
 
         // code (opcional)
@@ -58,8 +58,8 @@ class TranscriptRepository
             self::transcripts_table(),
             $data,
             !empty($code)
-                ? ['%d', '%s', '%s', '%s', '%s']
-                : ['%d', '%s', '%s', '%s']
+            ? ['%d', '%s', '%s', '%s', '%s']
+            : ['%d', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -177,24 +177,24 @@ class TranscriptRepository
                 self::words_table(),
                 [
                     'transcript_id' => (int) $transcript_id,
-                    'idx'           => (int) ($word['idx'] ?? 0),
-                    'word'          => $wordValue,
-                    'type'          => $type,
+                    'idx' => (int) ($word['idx'] ?? 0),
+                    'word' => $wordValue,
+                    'type' => $type,
 
-                    'start_ms'      => array_key_exists('start_ms', $word) ? (is_null($word['start_ms']) ? null : (int) $word['start_ms']) : null,
-                    'end_ms'        => array_key_exists('end_ms', $word) ? (is_null($word['end_ms']) ? null : (int) $word['end_ms']) : null,
-                    'group_id'      => array_key_exists('group_id', $word) ? (is_null($word['group_id']) ? null : (int) $word['group_id']) : null,
+                    'start_ms' => array_key_exists('start_ms', $word) ? (is_null($word['start_ms']) ? null : (int) $word['start_ms']) : null,
+                    'end_ms' => array_key_exists('end_ms', $word) ? (is_null($word['end_ms']) ? null : (int) $word['end_ms']) : null,
+                    'group_id' => array_key_exists('group_id', $word) ? (is_null($word['group_id']) ? null : (int) $word['group_id']) : null,
 
                     /* ===== ESTILOS ===== */
-                    'font_family'    => $word['font_family'] ?? null,
-                    'font_size'      => isset($word['font_size']) ? (int) $word['font_size'] : null,
-                    'font_weight'    => $word['font_weight'] ?? null,
-                    'font_style'     => $word['font_style'] ?? null,
-                    'underline'      => !empty($word['underline']) ? 1 : 0,
-                    'color'          => $word['color'] ?? null,
-                    'background'     => $word['background'] ?? null,
+                    'font_family' => $word['font_family'] ?? null,
+                    'font_size' => isset($word['font_size']) ? (int) $word['font_size'] : null,
+                    'font_weight' => $word['font_weight'] ?? null,
+                    'font_style' => $word['font_style'] ?? null,
+                    'underline' => !empty($word['underline']) ? 1 : 0,
+                    'color' => $word['color'] ?? null,
+                    'background' => $word['background'] ?? null,
                     'letter_spacing' => $word['letter_spacing'] ?? null,
-                    'line_height'    => $word['line_height'] ?? null,
+                    'line_height' => $word['line_height'] ?? null,
                 ],
                 [
                     '%d', // transcript_id
@@ -319,9 +319,9 @@ class TranscriptRepository
 
             if (!isset($grouped[$key])) {
                 $grouped[$key] = [
-                    'text'     => $word->word,
+                    'text' => $word->word,
                     'start_ms' => $word->start_ms,
-                    'end_ms'   => $word->end_ms,
+                    'end_ms' => $word->end_ms,
                 ];
             } else {
                 $grouped[$key]['text'] .= ' ' . $word->word;
@@ -407,11 +407,11 @@ class TranscriptRepository
 
             foreach ($lineTokens as $w) {
                 $tokens[] = [
-                    'idx'      => $idx++,
-                    'word'     => $w,
-                    'type'     => 'word',
+                    'idx' => $idx++,
+                    'word' => $w,
+                    'type' => 'word',
                     'start_ms' => null,
-                    'end_ms'   => null,
+                    'end_ms' => null,
                     'group_id' => null,
                 ];
                 $wordCount++;
@@ -419,11 +419,11 @@ class TranscriptRepository
 
             // linebreak estrutural (sem tempo)
             $tokens[] = [
-                'idx'      => $idx++,
-                'word'     => "\n",
-                'type'     => 'linebreak',
+                'idx' => $idx++,
+                'word' => "\n",
+                'type' => 'linebreak',
                 'start_ms' => null,
-                'end_ms'   => null,
+                'end_ms' => null,
                 'group_id' => null,
             ];
         }
@@ -459,7 +459,7 @@ class TranscriptRepository
             foreach ($tokens as &$token) {
                 if (($token['type'] ?? 'word') === 'word') {
                     $token['start_ms'] = $currentTime;
-                    $token['end_ms']   = $currentTime + $step;
+                    $token['end_ms'] = $currentTime + $step;
                     $currentTime += $step;
                 }
             }
@@ -479,4 +479,84 @@ class TranscriptRepository
          * ===================================================== */
         self::insert_words_bulk($transcript_id, $tokens);
     }
+
+    /* =====================================================
+     * REBUILD (ESTRUTURAL – WORDS + LINEBREAK)
+     * ===================================================== */
+
+    /**
+     * Reconstrói a transcrição a partir de palavras estruturadas
+     * - Mantém tempos
+     * - Recria idx
+     * - Persiste linebreak corretamente
+     */
+    public static function rebuild_from_words(int $transcript_id, array $words): void
+    {
+        // Remove tudo antes
+        self::delete_words($transcript_id);
+
+        $idx = 0;
+
+        foreach ($words as $w) {
+
+            $type = $w['type'] ?? 'word';
+
+            /* ===============================
+             * LINE BREAK
+             * =============================== */
+            if ($type === 'linebreak') {
+                self::insert_words_bulk($transcript_id, [
+                    [
+                        'idx' => $idx++,
+                        'word' => "\n",
+                        'type' => 'linebreak',
+                        'start_ms' => null,
+                        'end_ms' => null,
+                        'group_id' => null,
+                    ]
+                ]);
+                continue;
+            }
+
+            /* ===============================
+             * WORD
+             * =============================== */
+            $wordText = trim($w['word'] ?? '');
+
+            // evita lixo (ex: spans vazios)
+            if ($wordText === '') {
+                continue;
+            }
+
+            self::insert_words_bulk($transcript_id, [
+                [
+                    'idx' => $idx++,
+                    'word' => $wordText,
+                    'type' => 'word',
+
+                    'start_ms' => isset($w['start_ms']) && is_numeric($w['start_ms'])
+                        ? (int) $w['start_ms']
+                        : null,
+
+                    'end_ms' => isset($w['end_ms']) && is_numeric($w['end_ms'])
+                        ? (int) $w['end_ms']
+                        : null,
+
+                    'group_id' => null,
+
+                    // estilos
+                    'font_family' => $w['font_family'] ?? null,
+                    'font_size' => isset($w['font_size']) ? (int) $w['font_size'] : null,
+                    'font_weight' => $w['font_weight'] ?? null,
+                    'font_style' => $w['font_style'] ?? null,
+                    'underline' => !empty($w['underline']) ? 1 : 0,
+                    'color' => $w['color'] ?? null,
+                    'background' => $w['background'] ?? null,
+                    'letter_spacing' => $w['letter_spacing'] ?? null,
+                    'line_height' => $w['line_height'] ?? null,
+                ]
+            ]);
+        }
+    }
+
 }

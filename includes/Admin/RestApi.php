@@ -79,7 +79,7 @@ class RestApi
     {
         $transcript_id = (int) $request['id'];
 
-        $transcript = TranscriptRepository::getById($transcript_id);
+        $transcript = TranscriptRepository::get_by_id($transcript_id);
 
         if (!$transcript) {
             return new WP_Error(
@@ -91,7 +91,7 @@ class RestApi
 
         return [
             'transcript' => $transcript,
-            'words' => TranscriptRepository::getWords($transcript_id),
+            'words' => TranscriptRepository::get_words($transcript_id),
         ];
     }
 
@@ -161,7 +161,7 @@ class RestApi
             );
         }
 
-        $group_id = TranscriptRepository::mergeWords(
+        $group_id = TranscriptRepository::merge_words(
             array_map('intval', $params['word_ids'])
         );
 
@@ -186,7 +186,7 @@ class RestApi
             );
         }
 
-        TranscriptRepository::unmergeGroup((int) $params['group_id']);
+        TranscriptRepository::unmerge_group((int) $params['group_id']);
 
         return ['status' => 'success'];
     }
@@ -196,22 +196,52 @@ class RestApi
         $id = (int) $request['id'];
         $params = $request->get_json_params();
 
-        if (empty($params['text'])) {
-            return new WP_Error('invalid', 'Texto vazio', ['status' => 400]);
+        if (empty($params)) {
+            return new WP_Error('invalid', 'Payload vazio', ['status' => 400]);
         }
 
-        // ⚠️ NÃO sanitize texto multilinha com strip/sanitize_text_field
-        $text = wp_unslash($params['text']);
-        $text = trim($text);
+        $preserveTimes = !empty($params['preserve_times']);
 
-        // 🔥 DELEGA TOTALMENTE PARA O REPOSITORY
-        TranscriptRepository::rebuild_from_text($id, $text);
+        /* =====================================================
+         * 🔴 REBUILD TOTAL (texto puro)
+         * ===================================================== */
+        if (!$preserveTimes && !empty($params['text'])) {
 
-        return [
-            'status' => 'rebuilt',
-            'transcript_id' => $id
-        ];
+            $text = wp_unslash($params['text']);
+            $text = trim($text);
+
+            if ($text === '') {
+                return new WP_Error('invalid', 'Texto vazio', ['status' => 400]);
+            }
+
+            TranscriptRepository::rebuild_from_text($id, $text);
+
+            return [
+                'status' => 'rebuilt',
+                'mode' => 'text'
+            ];
+        }
+
+        /* =====================================================
+         * 🟡 REBUILD ESTRUTURAL (words + <br>)
+         * ===================================================== */
+        if ($preserveTimes && !empty($params['words']) && is_array($params['words'])) {
+
+            TranscriptRepository::rebuild_from_words($id, $params['words']);
+
+            return [
+                'status' => 'rebuilt',
+                'mode' => 'structured'
+            ];
+        }
+
+        return new WP_Error(
+            'invalid_payload',
+            'Dados inválidos para rebuild',
+            ['status' => 400]
+        );
     }
+
 
 
 }
