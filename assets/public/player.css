@@ -2,45 +2,128 @@
    LEITURINHA KARAOKE – PLAYER PÚBLICO
 ===================================================== */
 
+:root {
+    --lk-yellow: #fdbe3f;
+    --lk-yellow-highlight: rgba(255, 230, 150, .9);
+    --lk-text-white: #ffffff;
+}
+
+/* =====================================================
+   WRAPPER GERAL
+===================================================== */
+
 .lk-karaoke-wrapper {
     max-width: 900px;
     margin: 0 auto;
+    padding-bottom: 3rem;
 }
+
+/* =====================================================
+   PLAYER DE ÁUDIO
+===================================================== */
 
 .lk-karaoke-audio {
     width: 100%;
     margin-bottom: 20px;
 }
 
+/* =====================================================
+   PAINEL DO TEXTO (FUNDO)
+===================================================== */
+
 .lk-karaoke-text {
+    position: relative;
+    padding: 5rem 2.2rem;
     font-size: 1.3rem;
     line-height: 2.2;
     user-select: none;
+    text-align: left;
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 1;
 }
+
+/* Fundo amarelo em camada separada */
+.lk-karaoke-text::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--lk-yellow);
+    filter: brightness(0.65);
+    z-index: -1; /* 🔥 garante que fique atrás do texto */
+}
+
+/* =====================================================
+   PALAVRAS
+===================================================== */
 
 .lk-word {
+    position: relative;
+    z-index: 2;
     display: inline-block;
     padding: 3px 6px;
-    margin-right: 2px;
+    margin-right: 6px;
     border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
+    cursor: default;
+
+    /* tipografia */
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--lk-text-white);
+
+    /* animação */
+    transition: background-color .12s ease-in-out,
+                color .12s ease-in-out;
 }
 
-.lk-word:hover {
-    background: #eee;
+/* Hover apenas no desktop */
+@media (hover: hover) {
+    .lk-word:hover {
+        background: rgba(255,255,255,.15);
+    }
 }
 
+/* Palavra ativa (karaokê) */
 .lk-word.active {
-    background: #f5d000; /* amarelo escuro */
-    color: #000;
+    background: var(--lk-yellow-highlight);
+    color: #ffffff;
     font-weight: 600;
 }
 
-/* Mobile */
+/* =====================================================
+   REFERÊNCIA / CRÉDITOS
+===================================================== */
+
+.lk-ref {
+    max-width: 900px;
+    margin: 18px auto 0;
+    font-size: 0.85rem;
+    color: #444;
+    line-height: 1.5;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+/* =====================================================
+   RESPONSIVO
+===================================================== */
+
 @media (max-width: 768px) {
+
     .lk-karaoke-text {
+        padding: 2.2rem 1.4rem;
         font-size: 1.1rem;
         line-height: 2;
     }
+
+    .lk-word {
+        margin-right: 4px;
+    }
+}
+
+.transcript-container{
+    max-height: 100% !important;
+    height: 100% !important;
 }

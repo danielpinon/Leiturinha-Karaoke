@@ -1,5 +1,3 @@
-// assets/admin/editor/time-organizer.js
-
 window.LKEditorTimeOrganizer = {
 
     organize(options = {}) {
@@ -85,7 +83,7 @@ window.LKEditorTimeOrganizer = {
             if (!(node instanceof HTMLElement)) return;
             if (!node.classList.contains('word')) return;
 
-            const id = node.dataset.id ? Number(node.dataset.id) : null;
+            const idStr = node.dataset.id ? String(node.dataset.id) : null;
 
             if (!isTimedWord(node)) {
                 node.dataset.start = cursor;
@@ -95,13 +93,22 @@ window.LKEditorTimeOrganizer = {
 
             const start = cursor;
 
-            const manual = id && manualWordTimes[id]
-                ? Math.max(1, manualWordTimes[id])
+            /* ===== MANUAL TIME (CORRETO) ===== */
+
+            const hasManual =
+                idStr !== null &&
+                Object.prototype.hasOwnProperty.call(manualWordTimes, idStr);
+
+            const manualVal = hasManual
+                ? Number(manualWordTimes[idStr])
                 : null;
 
-            const duration = manual !== null
-                ? manual
-                : baseWordTime(node);
+            const duration =
+                manualVal !== null &&
+                Number.isFinite(manualVal) &&
+                manualVal > 0
+                    ? Math.floor(manualVal)
+                    : baseWordTime(node);
 
             const end = start + duration;
 
@@ -126,8 +133,8 @@ window.LKEditorTimeOrganizer = {
                 const s = Number(word.dataset.start || 0);
                 const e = Number(word.dataset.end || 0);
 
-                let ns = Math.max(prevEnd, Math.floor(s * factor));
-                let ne = Math.max(ns + 1, Math.floor(e * factor));
+                const ns = Math.max(prevEnd, Math.floor(s * factor));
+                const ne = Math.max(ns + 1, Math.floor(e * factor));
 
                 word.dataset.start = ns;
                 word.dataset.end = ne;
@@ -145,7 +152,7 @@ window.LKEditorTimeOrganizer = {
         window.LKEditorState.needsRebuild = true;
 
         if (window.LKEditorKaraoke) {
-            LKEditorKaraoke.buildTimeline();
+            window.LKEditorKaraoke.buildTimeline();
         }
 
         console.info(
