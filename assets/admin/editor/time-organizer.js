@@ -11,7 +11,7 @@ window.LKEditorTimeOrganizer = {
         const { editor } = window.LKEditorState;
         if (!editor) return;
 
-        const MIN_WORD_TIME = 250;
+        const MIN_WORD_TIME = 200;
 
         let cursor = 0;
         let tempoFinal = 0;
@@ -22,6 +22,11 @@ window.LKEditorTimeOrganizer = {
          * HELPERS
          * =============================== */
 
+        const cleanText = text => {
+            // Remove pontuação e caracteres especiais para contar apenas letras/números
+            return text.replace(/[.,!?;:"“"”()]/g, '').trim();
+        };
+
         const isTimedWord = word =>
             /[\p{L}\p{N}]/u.test(word.innerText);
 
@@ -30,108 +35,64 @@ window.LKEditorTimeOrganizer = {
                 .test(text.trim());
 
         const baseWordTime = word => {
-
-            const text = word.innerText.trim();
+            const rawText = word.innerText.trim();
+            const text = cleanText(rawText);
+            
             if (!text) return MIN_WORD_TIME;
 
             /* ===============================
              * NÚMEROS E TOKENS NUMÉRICOS
              * =============================== */
-
-            // número puro
             if (/^\d+$/.test(text)) {
-                return Math.max(
-                    MIN_WORD_TIME,
-                    Math.min(280 + (text.length * 95), 1400)
-                );
-            }
-
-            // ordinal: 1º, 2ª
-            if (/^\d+[ºª]$/.test(text)) {
-                return 520;
+                return Math.max(MIN_WORD_TIME, Math.min(250 + (text.length * 90), 1200));
             }
 
             /* ===============================
              * BASE LINGUÍSTICA
              * =============================== */
-
             const letters = (text.match(/[\p{L}]/gu) || []).length;
-            let time = 260 + (letters * 34);
+            // Base mais leve: 180ms + 28ms por letra
+            let time = 180 + (letters * 28);
 
             /* ===============================
-             * UPPERCASE (ênfase / leitura pausada)
+             * ONOMATOPEIAS E REPETIÇÕES
              * =============================== */
-            if (text === text.toUpperCase()) {
-                time *= 1.15;
+            if (/(.)\1{1,}/i.test(text) || (text.includes('-') && text.split('-')[0] === text.split('-')[1])) {
+                time *= 0.8; 
             }
 
             /* ===============================
-             * ACENTOS E NASALIZAÇÃO
+             * UPPERCASE (Apenas se for palavra real)
              * =============================== */
-            if (/[áéíóúâêôãõà]/i.test(text)) {
-                time += 70;
-            }
-
-            if (/(ão|õe|ães|am|em|im|om|um)$/i.test(text)) {
-                time += 90;
+            if (text === text.toUpperCase() && letters > 1) {
+                time *= 1.1;
             }
 
             /* ===============================
-             * ENCONTROS CONSONANTAIS
+             * ACENTOS E COMPLEXIDADE
              * =============================== */
-            if (/(lh|nh|ch|rr|ss|br|cr|dr|fr|gr|pr|tr|vr)/i.test(text)) {
-                time += 80;
-            }
+            if (/[áéíóúâêôãõà]/i.test(text)) time += 40;
+            if (/(ão|õe|ães|am|em|im|om|um)$/i.test(text)) time += 50;
+            if (/(lh|nh|ch|rr|ss|br|cr|dr|fr|gr|pr|tr|vr)/i.test(text)) time += 50;
 
             /* ===============================
-             * HIATOS (sa-ú-de)
+             * PALAVRAS COMPOSTAS
              * =============================== */
-            if (/[aeiouáéíóúâêôãõà]-?[aeiouáéíóúâêôãõà]/i.test(text)) {
-                time += 70;
+            if (rawText.includes('-') || rawText.includes('/')) {
+                const parts = rawText.split(/[-/]/).filter(Boolean);
+                time += parts.length * 100;
             }
 
-            /* ===============================
-             * PALAVRAS COMPOSTAS / CLÍTICOS
-             * =============================== */
-            if (text.includes('-') || text.includes('/')) {
-                const parts = text.split(/[-/]/).filter(Boolean);
-
-                // cada bloco semântico
-                time += parts.length * 160;
-
-                // clíticos verbais: entregou-me, levá-lo
-                if (/(me|te|se|lhe|lhes|lo|la|los|las|nos|vos)$/i.test(text)) {
-                    time += 120;
-                }
-            }
-
-            /* ===============================
-             * SIGLAS
-             * =============================== */
-            if (/^[A-Z]{2,}$/.test(text)) {
-                time += letters * 120;
-            }
-
-            /* ===============================
-             * LIMITES FINAIS
-             * =============================== */
-            return Math.max(
-                MIN_WORD_TIME,
-                Math.min(Math.floor(time), 2800)
-            );
+            return Math.max(MIN_WORD_TIME, Math.min(Math.floor(time), 2200));
         };
-
 
         const semanticPauseAfter = word => {
             if (ignorePunctuation) return 0;
-
             const t = word.innerText.trim();
 
-            if (t.endsWith('?')) return 450;
-            if (t.endsWith('!')) return 420;
-            if (t.endsWith('.')) return 350;
-            if (t.endsWith(',')) return 180;
-            if (t.endsWith(':')) return 280;
+            // Suporte a aspas curvas e múltiplas pontuações
+            if (/[?!.]$|[?!.]["”]$/.test(t)) return 350;
+            if (/[,;:]$|[,;:]["”]$/.test(t)) return 120;
 
             return 0;
         };
@@ -141,12 +102,10 @@ window.LKEditorTimeOrganizer = {
          * =============================== */
 
         for (let i = 0; i < nodes.length; i++) {
-
             const node = nodes[i];
 
-            // <br>
             if (node.nodeName === 'BR') {
-                cursor += 250;
+                cursor += 150;
                 tempoFinal = cursor;
                 continue;
             }
@@ -162,120 +121,65 @@ window.LKEditorTimeOrganizer = {
 
             const text = node.innerText.trim();
 
-            /* ===== AGRUPAMENTO TEMPORAL (DATA / HORA) ===== */
             if (isTemporalToken(text)) {
-
                 const group = [node];
                 let j = i + 1;
-
-                while (
-                    j < nodes.length &&
-                    nodes[j] instanceof HTMLElement &&
-                    nodes[j].classList.contains('word') &&
-                    isTemporalToken(nodes[j].innerText.trim())
-                ) {
+                while (j < nodes.length && nodes[j] instanceof HTMLElement && nodes[j].classList.contains('word') && isTemporalToken(nodes[j].innerText.trim())) {
                     group.push(nodes[j]);
                     j++;
                 }
-
-                const groupDuration =
-                    1050 + (group.length * 90);
-
-                const perWord = Math.max(
-                    MIN_WORD_TIME,
-                    Math.floor(groupDuration / group.length)
-                );
-
+                const groupDuration = 800 + (group.length * 70);
+                const perWord = Math.max(MIN_WORD_TIME, Math.floor(groupDuration / group.length));
                 group.forEach(w => {
-                    const start = cursor;
-                    const end = start + perWord;
-
-                    w.dataset.start = start;
-                    w.dataset.end = end;
-
-                    cursor = end;
+                    w.dataset.start = cursor;
+                    w.dataset.end = cursor + perWord;
+                    cursor += perWord;
                 });
-
-                cursor += 90; // pausa curta natural
+                cursor += 50;
                 tempoFinal = cursor;
-
                 i = j - 1;
                 continue;
             }
 
-            /* ===== FLUXO NORMAL ===== */
-
             const start = cursor;
             const idStr = node.dataset.id ? String(node.dataset.id) : null;
+            const manualVal = idStr !== null && Object.prototype.hasOwnProperty.call(manualWordTimes, idStr) ? Number(manualWordTimes[idStr]) : null;
 
-            const manualVal =
-                idStr !== null &&
-                    Object.prototype.hasOwnProperty.call(manualWordTimes, idStr)
-                    ? Number(manualWordTimes[idStr])
-                    : null;
-
-            let duration =
-                Number.isFinite(manualVal) && manualVal > 0
-                    ? manualVal
-                    : baseWordTime(node);
-
+            let duration = Number.isFinite(manualVal) && manualVal > 0 ? manualVal : baseWordTime(node);
             duration = Math.max(MIN_WORD_TIME, Math.floor(duration));
 
-            const end = start + duration;
-
             node.dataset.start = start;
-            node.dataset.end = end;
+            node.dataset.end = start + duration;
 
-            cursor = end + semanticPauseAfter(node);
+            cursor = node.dataset.end * 1 + semanticPauseAfter(node);
             tempoFinal = cursor;
         }
 
         /* ===============================
-         * LIMITA AO TEMPO DO ÁUDIO
+         * NORMALIZAÇÃO FINAL (Obrigatória)
          * =============================== */
-
-        if (maxAudioTime && tempoFinal > maxAudioTime) {
-
+        if (maxAudioTime) {
             const factor = maxAudioTime / tempoFinal;
             let prevEnd = 0;
 
             editor.querySelectorAll('.word').forEach(word => {
-
                 const s = Number(word.dataset.start || 0);
                 const e = Number(word.dataset.end || 0);
 
-                const ns = Math.max(
-                    prevEnd,
-                    Math.floor(s * factor)
-                );
-
-                const ne = Math.max(
-                    ns + MIN_WORD_TIME,
-                    Math.floor(e * factor)
-                );
+                // Garante que os tempos sejam inteiros e sequenciais
+                const ns = Math.max(prevEnd, Math.floor(s * factor));
+                const ne = Math.max(ns + MIN_WORD_TIME, Math.floor(e * factor));
 
                 word.dataset.start = ns;
                 word.dataset.end = ne;
-
                 prevEnd = ne;
             });
-
             tempoFinal = maxAudioTime;
         }
 
-        /* ===============================
-         * FINALIZA
-         * =============================== */
-
         window.LKEditorState.needsRebuild = true;
+        if (window.LKEditorKaraoke) window.LKEditorKaraoke.buildTimeline();
 
-        if (window.LKEditorKaraoke) {
-            window.LKEditorKaraoke.buildTimeline();
-        }
-
-        console.info(
-            `⏱ Tempos reorganizados — final: ${tempoFinal} ms`,
-            { ignorePunctuation, manualWordTimes }
-        );
+        console.info(`⏱ Reorganizado: ${tempoFinal}ms`);
     }
 };
